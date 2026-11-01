@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1f3a">
+<title>BasemFly — Flight & Hotel Search</title>
+<style>
+:root{--navy:#0b1f3a;--blue:#1769e0;--bg:#f4f7fb;--ink:#172337;--muted:#637083;--line:#dfe6ef}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--navy);color:white;padding:22px max(18px,calc((100% - 1040px)/2));display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-size:1.45rem;font-weight:800;letter-spacing:-.04em}.brand span{color:#7db7ff}
+header small{color:#c6d6ec}.wrap{max-width:1040px;margin:32px auto;padding:0 18px}
+.hero{margin-bottom:22px}.hero h1{font-size:clamp(1.8rem,4vw,2.8rem);margin:0 0 8px;letter-spacing:-.04em}.hero p{margin:0;color:var(--muted)}
+.panel{background:white;border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 32px #0b1f3a0b;overflow:hidden}
+.tabs{display:flex;gap:8px;padding:14px;border-bottom:1px solid var(--line)}
+.tab{border:0;border-radius:10px;background:#eef3fa;color:var(--navy);padding:11px 18px;font-weight:700;cursor:pointer}.tab.active{background:var(--blue);color:white}
+form{padding:22px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:.85rem;font-weight:700;color:#455267}
+input,select{width:100%;min-width:0;padding:12px;border:1px solid #ccd6e3;border-radius:10px;font:inherit;background:white;color:var(--ink)}
+.submit{grid-column:1/-1;border:0;border-radius:11px;padding:14px;background:var(--blue);color:white;font-size:1rem;font-weight:800;cursor:pointer}.submit:hover{filter:brightness(.94)}
+.notice{margin:0 22px 22px;padding:12px 14px;border-radius:12px;background:#fff7e6;color:#744e00;font-size:.9rem;line-height:1.5}
+.results{margin-top:22px}.results h2{font-size:1.2rem}.result{background:white;border:1px solid var(--line);border-radius:14px;padding:16px;margin:10px 0;display:flex;justify-content:space-between;align-items:center;gap:14px}.result p{margin:5px 0;color:var(--muted);font-size:.92rem}.result a{display:inline-block;background:var(--navy);color:white;text-decoration:none;padding:10px 13px;border-radius:9px;font-weight:700;white-space:nowrap}.tag{font-size:.78rem;color:#805500;background:#fff1cc;padding:4px 8px;border-radius:99px}
+footer{text-align:center;color:var(--muted);font-size:.85rem;padding:28px 16px}
+@media(max-width:700px){form{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px}.result{align-items:flex-start;flex-direction:column}.result a{white-space:normal}.notice{margin:0 16px 16px}.tabs{padding:10px}.wrap{margin:24px auto}}
+@media(max-width:420px){form{grid-template-columns:1fr}.submit{grid-column:auto}}
+</style>
+</head>
+<body>
+<header><div class="brand">Basem<span>Fly</span> ✈</div><small>Travel search made simple</small></header>
+<main class="wrap">
+<section class="hero"><h1>Where will you go next?</h1><p>Search flights and stays in one simple place.</p></section>
+<section class="panel" aria-label="Travel search">
+<div class="tabs" role="tablist"><button class="tab active" id="flightTab" type="button" role="tab" aria-selected="true">✈ Flights</button><button class="tab" id="hotelTab" type="button" role="tab" aria-selected="false">⌂ Hotels</button></div>
+<form id="searchForm">
+<div class="field"><label id="fromLabel" for="from">From (airport or city)</label><input id="from" name="from" placeholder="e.g. Düsseldorf" value="Düsseldorf" required></div>
+<div class="field"><label id="toLabel" for="to">To (airport or city)</label><input id="to" name="to" placeholder="e.g. Istanbul" required></div>
+<div class="field"><label for="startDate" id="startLabel">Departure</label><input id="startDate" name="startDate" type="date" required></div>
+<div class="field"><label for="endDate" id="endLabel">Return</label><input id="endDate" name="endDate" type="date"></div>
+<div class="field" id="travelersField"><label for="travelers">Travelers</label><select id="travelers"><option>1 adult</option><option>2 adults</option><option>3 adults</option><option>4 adults</option></select></div>
+<div class="field" id="roomsField" hidden><label for="rooms">Rooms</label><select id="rooms"><option>1 room</option><option>2 rooms</option><option>3 rooms</option><option>4 rooms</option></select></div>
+<div class="field" id="classField"><label for="cabin">Cabin class</label><select id="cabin"><option>Economy</option><option>Premium economy</option><option>Business</option><option>First</option></select></div>
+<button class="submit" type="submit">Search <span id="searchType">flights</span></button>
+</form>
+<div class="notice"><strong>Prototype notice:</strong> This first version demonstrates the search interface only. It does not yet retrieve live prices or availability. Search results below are clearly marked as demo data until a travel provider API is connected.</div>
+</section>
+<section class="results" id="results" aria-live="polite"></section>
+</main>
+<footer>© <span id="year"></span> BasemFly · Prototype version · No booking or payment is processed here.</footer>
+<script>
+const $=id=>document.getElementById(id);
+let mode='flights';
+const today=new Date(); today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
+$('startDate').min=today.toISOString().slice(0,10);
+$('startDate').value=today.toISOString().slice(0,10);
+const later=new Date(today); later.setDate(later.getDate()+7);
+$('endDate').min=today.toISOString().slice(0,10);
+$('endDate').value=later.toISOString().slice(0,10);
+$('year').textContent=new Date().getFullYear();
+function setMode(next){
+ mode=next; const flight=mode==='flights';
+ $('flightTab').classList.toggle('active',flight); $('hotelTab').classList.toggle('active',!flight);
+ $('flightTab').setAttribute('aria-selected',String(flight)); $('hotelTab').setAttribute('aria-selected',String(!flight));
+ $('fromLabel').textContent=flight?'From (airport or city)':'City or destination';
+ $('toLabel').textContent=flight?'To (airport or city)':'Area or landmark (optional)';
+ $('from').placeholder=flight?'e.g. Düsseldorf':'e.g. Barcelona';
+ $('to').placeholder=flight?'e.g. Istanbul':'e.g. city centre';
+ $('startLabel').textContent=flight?'Departure':'Check-in';
+ $('endLabel').textContent=flight?'Return':'Check-out';
+ $('endDate').required=!flight;
+ $('travelersField').hidden=!flight; $('classField').hidden=!flight; $('roomsField').hidden=flight;
+ $('searchType').textContent=flight?'flights':'hotels';
+ $('results').innerHTML='';
+}
+$('flightTab').addEventListener('click',()=>setMode('flights'));
+$('hotelTab').addEventListener('click',()=>setMode('hotels'));
+$('searchForm').addEventListener('submit',e=>{
+ e.preventDefault();
+ const from=$('from').value.trim(),to=$('to').value.trim();
+ const start=$('startDate').value,end=$('endDate').value;
+ if(end && end<start){alert('Return/check-out date must be after departure/check-in.');return;}
+ const title=mode==='flights'?'Demo flight search':'Demo hotel search';
+ const desc=mode==='flights'
+ ? `${from} → ${to} · ${start}${end?' to '+end:''} · ${$('travelers').value} · ${$('cabin').value}`
+ : `${from} · Check-in ${start} · Check-out ${end} · ${$('rooms').value}`;
+ $('results').innerHTML=`<h2>${title}</h2><article class="result"><div><span class="tag">DEMO ONLY — NOT LIVE</span><h3>${escapeHtml(desc)}</h3><p>This is a placeholder result. Live prices and availability will appear after connecting an approved provider API.</p></div><a href="https://www.google.com/travel/" target="_blank" rel="noopener noreferrer">Explore travel options ↗</a></article><p style="color:#637083;font-size:.9rem">The external link opens a general travel search page. It is not a booking confirmation.</p>`;
+});
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+</script>
+</body>
+</html>
